@@ -1,0 +1,116 @@
+---
+title: "Visualising COVID-19, January 2020 - March 2020 (A Datacamp Project)"
+author: "Ziva Sacharissa"
+date: "11/01/2022"
+output: pdf_document
+---
+
+```{r setup, include=True}
+# Load readr, ggplot2, and dplyr packages
+library(readr)
+library(ggplot2)
+library(dplyr)
+
+# Reading confirmed_cases_worldwide.csv
+confirmed_cases_worldwide <- read_csv("datasets/confirmed_cases_worldwide.csv")
+head(confirmed_cases_worldwide)
+```
+
+
+```{r cars}
+# Plot cumulative cases vs. date
+ggplot(confirmed_cases_worldwide, aes(date, cum_cases)) +
+  geom_line() +
+  ylab("Cumulative confirmed cases")
+```
+# Confirmed Cases in the World vs. China
+Early on in the outbreak, the COVID-19 cases were primarily centered in China. The following figure visualises the confirmed COVID-19 cases in China and the rest of the world separately, with the intention to see if it confirms previous statement and if it will give further insight. 
+
+```{r pressure, echo=FALSE}
+# Read confirmed_cases_china_vs_world.csv
+confirmed_cases_china_vs_world <- read_csv("datasets/confirmed_cases_china_vs_world.csv")
+glimpse(confirmed_cases_china_vs_world)
+
+# Plot cumulative cases vs. date
+plt_cum_confirmed_cases_china_vs_world <- ggplot(confirmed_cases_china_vs_world) +
+  geom_line(aes(date, cum_cases, color = is_china)) +
+  ylab("Cumulative confirmed cases")
+
+plt_cum_confirmed_cases_china_vs_world
+```
+
+## Timeline of Events
+Just before 1st Feb 2020, global health emergency is declared. Such event is also observed in previous public health emergencies, most notably Ebola and Sars. However this was quickly re-evaluated into a pandemic on the 11th of March 2020. Between those two important events, China introduced the change in detecting the Covid-19 virus. The new method includes using CT scans instead of previous method of waiting upon lab results, which at the time is time-consuming, costly and requires process to be manned. This change resulted in the spike of confirmed cases, around 15th Feb 2020. 
+
+```{r pressure, echo=FALSE}
+who_events <- tribble(
+  ~ date, ~ event,
+  "2020-01-30", "Global health\nemergency declared",
+  "2020-03-11", "Pandemic\ndeclared",
+  "2020-02-13", "China reporting\nchange"
+) %>%
+  mutate(date = as.Date(date))
+
+#Adding vertical dashed lines and text with xintercept at date
+plt_cum_confirmed_cases_china_vs_world +
+  geom_vline(aes(xintercept = date), data = who_events, linetype = "dashed") +
+  geom_text(aes(date, label = event), data = who_events, y = 1e5)
+```
+
+```{r pressure, echo=FALSE}
+#Filter for China, from Feb 15
+china_after_feb15 <- confirmed_cases_china_vs_world %>%
+  filter(is_china == "China", date >= "2020-02-15")
+
+#Plot cum_cases vs. date for china_after_feb15
+#Add a smooth trend line using lm
+ggplot(china_after_feb15, aes(date, cum_cases)) +
+  geom_line() +
+  geom_smooth(method = "lm", se = FALSE) +
+  ylab("Cumulative confirmed cases")
+```
+
+```{r pressure, echo=FALSE}
+#Filter confirmed_cases_china_vs_world for not China
+not_china <- confirmed_cases_china_vs_world %>% filter(is_china == "Not China")
+
+#Plot cum_cases vs. date
+#Add a smooth trend line using lm
+plt_not_china_trend_lin <- ggplot(not_china, aes(date, cum_cases)) +
+  geom_line() +
+  geom_smooth(method = "lm", se = FALSE) +
+  ylab("Cumulative confirmed cases")
+
+plt_not_china_trend_lin 
+```
+
+```{r pressure, echo=FALSE}
+#Logarithmic scale on y-axis
+plt_not_china_trend_lin + 
+  scale_y_log10()
+```
+#Top 7 Countries with Highest Total Confirmed Cases
+```{r pressure, echo=FALSE}
+confirmed_cases_by_country <- read_csv("datasets/confirmed_cases_by_country.csv")
+glimpse(confirmed_cases_by_country)
+
+#Group by country, summarize to calculate total cases
+top_countries_by_total_cases <- confirmed_cases_by_country%>%
+  group_by(country)%>%
+  summarize(total_cases = max(cum_cases))%>%
+  top_n(7, total_cases)
+
+top_countries_by_total_cases
+```
+
+```{r pressure, echo=FALSE}
+confirmed_cases_top7_outside_china <- read_csv("datasets/confirmed_cases_top7_outside_china.csv")
+# Glimpse
+glimpse(confirmed_cases_top7_outside_china)
+
+#Plot cum_cases vs. date by country
+ggplot(confirmed_cases_top7_outside_china, aes(date, cum_cases, color = country)) +
+    geom_line() +
+    ylab("Cumulative confirmed cases")
+```
+
